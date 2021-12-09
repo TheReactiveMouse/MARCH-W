@@ -3,61 +3,42 @@
 #include <functional>
 #include <map>
 #include <thread>
-#include "ErrorProtectedMemory.h"
-#include "ErrorOutOfTheRange.h"
-#include "ErrorInvalidMathExecution.h"
-#include "ErrorIsNotAValue.h"
-#include "ErrorDivideByZero.h"
-
+#include "GuardRules.h"
+#include "Variables.h"
+#include "Threading.h"
+#include "GPU.h"
 using namespace std;
 
 
 class Memory {
-public:
-    char memory[768];
-    std::map<int, std::function<void()>> memory_func{};
+    public:
+        char memory[768];
+        std::map<int, std::function<void()>> memory_func{};
 
 };
-
-namespace Graphics {
-    char Monitor[128] = {};
-
-    [[noreturn]] void GPUInstance() {
-        while (0 == 0) {
-            for (int x = 0; x < 8; x++) {
-                std::cout << "  " << std::endl;
-            }
-            for (int x = 0; x < sizeof(Graphics::Monitor); x++) {
-                std::cout << Graphics::Monitor[x];
-            }
-        }
-    }
-
-    void ant_wrt_gpu_lnn_w(int x, std::string text) {
-        for (int y = 0; y < sizeof(text); y++) {
-            const char *buffer = text.c_str();
-            Monitor[x + y] = buffer[y];
-        }
-    }
-
-    void GPUStart() {
-        std::thread gpuInstance(GPUInstance);
-        gpuInstance.join();
-    }
-}
 
 namespace processor {
     Memory InternalMemory;
     int RegisteredFunctions = 0;
+    
+    Threading::Core Core1;
+    Threading::Core Core2;
+    Threading::Core Core3;
+    Threading::Core Core4;
+    Threading::Core Core5;
+    Threading::Core Core6;
+    Threading::Core Core7;
+    Threading::Core Core8;
 
-    void mov(int address1, int address2 = NULL, char address2_t[] = NULL) {
-        if (address1 > sizeof(InternalMemory.memory) ||
-            address2 > sizeof(InternalMemory.memory)) { throw CPUStop_OutOfMemoryRange(); }
-        if (address1 < 0) { throw CPUStop_OutOfMemoryRange(); }
-        if (address2 != NULL && address2 < 0) { throw CPUStop_OutOfMemoryRange(); }
-        if (address1 < 10) { throw CPUCriticalStop_AccessProtectedMemory(); }
-        if (address2 != NULL && address2 < 10) { throw CPUCriticalStop_AccessProtectedMemory(); }
+    /*
+     * Guard Rules.
+     */
 
+
+
+    void mov(int address1, int address2 = -1, char address2_t[] = NULL) {
+
+        GuardCheckRAMRequest(address1, address2, InternalMemory.memory);
         if (address2 == NULL && address2_t != NULL && sizeof(address2_t) > 1) {
             for (int x = 0; x < sizeof(address2_t); x++) {
                 InternalMemory.memory[address1 + x] = address2_t[x];
@@ -69,67 +50,26 @@ namespace processor {
     }
 
     void add(int address1, int address2) {
-        if (address1 > sizeof(InternalMemory.memory) ||
-            address2 > sizeof(InternalMemory.memory)) { throw CPUStop_OutOfMemoryRange(); }
-        if (address1 < 0 || address2 < 0) { throw CPUStop_OutOfMemoryRange(); }
-        if (InternalMemory.memory[address1] > 65536 ||
-            InternalMemory.memory[address2] > 65536) { throw CPUCritical_MathExecutionIncorrect(); }
-        if (isdigit(InternalMemory.memory[address1]) != true ||
-            isdigit(InternalMemory.memory[address2]) != true) { throw CPUError_IsNotAvalue(); }
-        if (InternalMemory.memory[address1] + InternalMemory.memory[address2] >
-            65536) { throw CPUCritical_MathExecutionIncorrect(); }
+        GuardCheckMathCorrect_Add(address1, address2, InternalMemory.memory);
         InternalMemory.memory[address1] = (int) InternalMemory.memory[address1] + (int) InternalMemory.memory[address2];
     }
 
     void dec(int address1, int address2) {
-        if (address1 > sizeof(InternalMemory.memory) ||
-            address2 > sizeof(InternalMemory.memory)) { throw CPUStop_OutOfMemoryRange(); }
-        if (address1 < 0 || address2 < 0) { throw CPUStop_OutOfMemoryRange(); }
-        if (InternalMemory.memory[address1] > 65536 ||
-            InternalMemory.memory[address2] > 65536) { throw CPUCritical_MathExecutionIncorrect(); }
-        if (isdigit(InternalMemory.memory[address1]) != true ||
-            isdigit(InternalMemory.memory[address2]) != true) { throw CPUError_IsNotAvalue(); }
-        if (InternalMemory.memory[address1] + InternalMemory.memory[address2] >
-            65536) { throw CPUCritical_MathExecutionIncorrect(); }
+        GuardCheckMathCorrect_Dec(address1, address2, InternalMemory.memory);
         InternalMemory.memory[address1] = (int) InternalMemory.memory[address1] - (int) InternalMemory.memory[address2];
     }
 
     void div(int address1, int address2) {
-        if (address1 > sizeof(InternalMemory.memory) ||
-            address2 > sizeof(InternalMemory.memory)) { throw CPUStop_OutOfMemoryRange(); }
-        if (InternalMemory.memory[address1] == '0' ||
-            InternalMemory.memory[address2] == '0') { throw CPUCriticalError_DivideByZero(); }
-        if (address1 < 0 || address2 < 0) { throw CPUStop_OutOfMemoryRange(); }
-        if (InternalMemory.memory[address1] > 65536 ||
-            InternalMemory.memory[address2] > 65536) { throw CPUCritical_MathExecutionIncorrect(); }
-        if (isdigit(InternalMemory.memory[address1]) != true ||
-            isdigit(InternalMemory.memory[address2]) != true) { throw CPUError_IsNotAvalue(); }
-        if (InternalMemory.memory[address1] + InternalMemory.memory[address2] >
-            65536) { throw CPUCritical_MathExecutionIncorrect(); }
         InternalMemory.memory[address1] = (int) InternalMemory.memory[address1] / (int) InternalMemory.memory[address2];
     }
 
     void mul(int address1, int address2) {
-        if (address1 > sizeof(InternalMemory.memory) ||
-            address2 > sizeof(InternalMemory.memory)) { throw CPUStop_OutOfMemoryRange(); }
-        if (address1 < 0 || address2 < 0) { throw CPUStop_OutOfMemoryRange(); }
-        if (InternalMemory.memory[address1] > 65536 ||
-            InternalMemory.memory[address2] > 65536) { throw CPUCritical_MathExecutionIncorrect(); }
-        if (isdigit(InternalMemory.memory[address1]) != true ||
-            isdigit(InternalMemory.memory[address2]) != true) { throw CPUError_IsNotAvalue(); }
-        if (InternalMemory.memory[address1] + InternalMemory.memory[address2] >
-            65536) { throw CPUCritical_MathExecutionIncorrect(); }
+        GuardCheckMathCorrect_Mul(address1, address2, InternalMemory.memory);
         InternalMemory.memory[address1] = (int) InternalMemory.memory[address1] * (int) InternalMemory.memory[address2];
     }
 
     void cmp(int address1, int address2) {
-        if (address1 > sizeof(InternalMemory.memory) ||
-            address2 > sizeof(InternalMemory.memory)) { throw CPUStop_OutOfMemoryRange(); }
-        if (address1 < 0 || address2 < 0) { throw CPUStop_OutOfMemoryRange(); }
-        if (InternalMemory.memory[address1] > 65536 ||
-            InternalMemory.memory[address2] > 65536) { throw CPUCritical_MathExecutionIncorrect(); }
-        if (InternalMemory.memory[address2] == InternalMemory.memory[address1]) { InternalMemory.memory[3] = '1'; }
-        else { InternalMemory.memory[3] = '0'; }
+        GuardCheckLogicCorrect_Cmp(address1, address2, InternalMemory.memory);
     }
 
     void reg(std::function<void()> Function) {
@@ -137,19 +77,40 @@ namespace processor {
         RegisteredFunctions++;
     }
 
-    void jmp(int address) {
-        InternalMemory.memory_func[address]();
-    }
 
-    void je(int Pointer) {
-        if (InternalMemory.memory[3] == '1') {
-            jmp(Pointer);
+    void jmp(int address, int Core) {
+
+        switch(Core)
+        {
+            case 1:
+                Core1.Launch(InternalMemory.memory_func[address]);
+            case 2:
+                Core2.Launch(InternalMemory.memory_func[address]);
+            case 3:
+                Core3.Launch(InternalMemory.memory_func[address]);
+            case 4:
+                Core4.Launch(InternalMemory.memory_func[address]);
+            case 5:
+                Core5.Launch(InternalMemory.memory_func[address]);
+            case 6:
+                Core6.Launch(InternalMemory.memory_func[address]);
+            case 7:
+                Core7.Launch(InternalMemory.memory_func[address]);
+            case 8:
+                Core8.Launch(InternalMemory.memory_func[address]);
+
         }
     }
 
-    void jne(int Pointer) {
+    void je(int Pointer, int Core) {
+        if (InternalMemory.memory[3] == '1') {
+            jmp(Pointer, Core);
+        }
+    }
+
+    void jne(int Pointer, int Core) {
         if (InternalMemory.memory[3] == '0') {
-            jmp(Pointer);
+            jmp(Pointer, Core);
         }
     }
 
@@ -157,5 +118,13 @@ namespace processor {
 
     void rui(int address) {
         std::cin >> InternalMemory.memory[address];
+    }
+
+    void loop(int Pointer, int Core)
+    {
+        while(InternalMemory.memory[3] != '1')
+        {
+            jmp(Pointer, Core);
+        }
     }
 }
