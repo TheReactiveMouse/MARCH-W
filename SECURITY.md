@@ -4,9 +4,10 @@
 
 Supported CPUs
 
-| Version     | Supported          |
-| -------     | ------------------ |
-| v0.1-beta   | :white_check_mark: |
+| Version              | Supported          |
+| -------              | ------------------ |
+| v0.1-beta            | :white_check_mark: |
+| v0.2-beta-unstable   | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
